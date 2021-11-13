@@ -1,0 +1,13 @@
+# Target labels
+ bootloader
+# Source files and their labels
+/home/skrimm/esp-projects/wifi/test/restful_wifi_points/build/CMakeFiles/bootloader
+/home/skrimm/esp-projects/wifi/test/restful_wifi_points/build/CMakeFiles/bootloader.rule
+/home/skrimm/esp-projects/wifi/test/restful_wifi_points/build/CMakeFiles/bootloader-complete.rule
+/home/skrimm/esp-projects/wifi/test/restful_wifi_points/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
+/home/skrimm/esp-projects/wifi/test/restful_wifi_points/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+/home/skrimm/esp-projects/wifi/test/restful_wifi_points/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+/home/skrimm/esp-projects/wifi/test/restful_wifi_points/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+/home/skrimm/esp-projects/wifi/test/restful_wifi_points/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+/home/skrimm/esp-projects/wifi/test/restful_wifi_points/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+/home/skrimm/esp-projects/wifi/test/restful_wifi_points/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
