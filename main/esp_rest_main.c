@@ -128,7 +128,17 @@ void app_main(void)
     initialise_mdns();
     netbiosns_init();
     netbiosns_set_name(CONFIG_EXAMPLE_MDNS_HOST_NAME);
-    ESP_ERROR_CHECK(wifi_init_sta(CONFIG_EXAMPLE_WIFI_SSID, CONFIG_EXAMPLE_WIFI_PASSWORD));
+    //ESP_ERROR_CHECK(wifi_init_sta(CONFIG_EXAMPLE_WIFI_SSID, CONFIG_EXAMPLE_WIFI_PASSWORD));
+    wifi_scan();
+    wifi_station_deinit();
+    if (wifi_init_sta(CONFIG_EXAMPLE_WIFI_SSID, CONFIG_EXAMPLE_WIFI_PASSWORD) == ESP_OK){
+        ESP_LOGI(TAG, "Connected to WiFi in Station mode");
+    }
+    else{
+        ESP_LOGE(TAG, "Attempt to connect WiFi in Station mode FAILED, setup SoftAP mode");
+        
+        //wifi_init_softap();
+    }
     ESP_ERROR_CHECK(init_fs());
     ESP_ERROR_CHECK(start_rest_server(CONFIG_EXAMPLE_WEB_MOUNT_POINT));
 }

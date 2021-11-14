@@ -1,6 +1,7 @@
 {
   "C_Cpp.intelliSenseEngine": "Tag Parser",
   "files.associations": {
-    "wifi.h": "c"
+    "wifi.h": "c",
+    "*.inc": "c"
   }
 }

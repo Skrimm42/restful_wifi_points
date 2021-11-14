@@ -13,6 +13,9 @@
 #include "esp_log.h"
 #include "esp_vfs.h"
 #include "cJSON.h"
+#include "esp_wifi.h"
+#include "wifi.h"
+#include "freertos/semphr.h"
 
 static const char *REST_TAG = "esp-rest";
 #define REST_CHECK(a, str, goto_tag, ...)                                              \
@@ -147,9 +150,9 @@ static esp_err_t system_info_get_handler(httpd_req_t *req)
     esp_chip_info(&chip_info);
     cJSON_AddStringToObject(root, "version", IDF_VER);
     cJSON_AddNumberToObject(root, "cores", chip_info.cores);
-    const char *sys_info = cJSON_Print(root);
-    httpd_resp_sendstr(req, sys_info);
-    free((void *)sys_info);
+    const char *ap_list_info = cJSON_Print(root);
+    httpd_resp_sendstr(req, ap_list_info);
+    free((void *)ap_list_info);
     cJSON_Delete(root);
     return ESP_OK;
 }
@@ -160,14 +163,14 @@ static esp_err_t temperature_data_get_handler(httpd_req_t *req)
     httpd_resp_set_type(req, "application/json");
     cJSON *root = cJSON_CreateObject();
     cJSON_AddNumberToObject(root, "raw", esp_random() % 20);
-    const char *sys_info = cJSON_Print(root);
-    httpd_resp_sendstr(req, sys_info);
-    free((void *)sys_info);
+    const char *ap_list_info = cJSON_Print(root);
+    httpd_resp_sendstr(req, ap_list_info);
+    free((void *)ap_list_info);
     cJSON_Delete(root);
     return ESP_OK;
 }
 
-//GET dummy data
+//GET data
 static esp_err_t listWiFi_get_handler(httpd_req_t *req){
     httpd_resp_set_type(req, "application/json");
     cJSON *root = cJSON_CreateObject();
@@ -175,33 +178,45 @@ static esp_err_t listWiFi_get_handler(httpd_req_t *req){
     cJSON *wifi_list=cJSON_AddArrayToObject(root, "aps");//access points list
     //Add items to array
     //for(...)
-    cJSON *item = cJSON_CreateObject();
-    cJSON_AddNumberToObject(item, "id", 1);
-    cJSON_AddStringToObject(item, "ssid", "AHYC_TOPA");
-    cJSON_AddNumberToObject(item, "strength", -95);
-    cJSON_AddItemToArray(wifi_list, item);
+    xSemaphoreTake(s_semph_get_ap_list, portMAX_DELAY);
+    for(uint8_t i = 0; i < ap_count; i++)
+    {
+        ESP_LOGI(REST_TAG, "Enter cycle to make JSON array");
+        cJSON *item = cJSON_CreateObject();
+        cJSON_AddNumberToObject(item, "id", i);
+        cJSON_AddStringToObject(item, "ssid", (const char *)ap_info[i].ssid);
+        cJSON_AddNumberToObject(item, "strength", ap_info[i].rssi);
+        cJSON_AddItemToArray(wifi_list, item);
+    }
+    xSemaphoreGive(s_semph_get_ap_list);
 
-    cJSON *item1 = cJSON_CreateObject();
-    cJSON_AddNumberToObject(item1, "id", 2);
-    cJSON_AddStringToObject(item1, "ssid", "Homespot");
-    cJSON_AddNumberToObject(item1, "strength", -96);
-    cJSON_AddItemToArray(wifi_list, item1);
+    // cJSON *item = cJSON_CreateObject();
+    // cJSON_AddNumberToObject(item, "id", 1);
+    // cJSON_AddStringToObject(item, "ssid", "AHYC_TOPA");
+    // cJSON_AddNumberToObject(item, "strength", -95);
+    // cJSON_AddItemToArray(wifi_list, item);
 
-    cJSON *item2 = cJSON_CreateObject();
-    cJSON_AddNumberToObject(item2, "id", 3);
-    cJSON_AddStringToObject(item2, "ssid", "TP_Link_98db9f");
-    cJSON_AddNumberToObject(item2, "strength", -104);
-    cJSON_AddItemToArray(wifi_list, item2);
+    // cJSON *item1 = cJSON_CreateObject();
+    // cJSON_AddNumberToObject(item1, "id", 2);
+    // cJSON_AddStringToObject(item1, "ssid", "Homespot");
+    // cJSON_AddNumberToObject(item1, "strength", -96);
+    // cJSON_AddItemToArray(wifi_list, item1);
 
-    cJSON *item3 = cJSON_CreateObject();
-    cJSON_AddNumberToObject(item3, "id", 4);
-    cJSON_AddStringToObject(item3, "ssid", "DLink_ffd1289d34");
-    cJSON_AddNumberToObject(item3, "strength", -106);
-    cJSON_AddItemToArray(wifi_list, item3);
+    // cJSON *item2 = cJSON_CreateObject();
+    // cJSON_AddNumberToObject(item2, "id", 3);
+    // cJSON_AddStringToObject(item2, "ssid", "TP_Link_98db9f");
+    // cJSON_AddNumberToObject(item2, "strength", -104);
+    // cJSON_AddItemToArray(wifi_list, item2);
 
-    const char *sys_info = cJSON_Print(root);
-    httpd_resp_sendstr(req, sys_info);
-    free((void *)sys_info);
+    // cJSON *item3 = cJSON_CreateObject();
+    // cJSON_AddNumberToObject(item3, "id", 4);
+    // cJSON_AddStringToObject(item3, "ssid", "DLink_ffd1289d34");
+    // cJSON_AddNumberToObject(item3, "strength", -106);
+    // cJSON_AddItemToArray(wifi_list, item3);
+
+    const char *ap_list_info = cJSON_Print(root);
+    httpd_resp_sendstr(req, ap_list_info);
+    free((void *)ap_list_info);
     cJSON_Delete(root);
     return ESP_OK; 
 }
