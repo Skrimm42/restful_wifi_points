@@ -192,7 +192,7 @@ static esp_err_t pass_update_post_handler(httpd_req_t *req)
         return ESP_FAIL;
     }
     ESP_LOGI(REST_TAG, "Write json string to SD Card %s, size %d", credentials_str, strlen(credentials_str));
-    fwrite(credentials_str, strlen(credentials_str), 1, fd);
+        fwrite(credentials_str, strlen(credentials_str), 1, fd);
     fclose(fd);
     free((void *)credentials_str);
     cJSON_Delete(credentials);
@@ -247,7 +247,7 @@ static esp_err_t listWiFi_get_handler(httpd_req_t *req)
         cJSON *item = cJSON_CreateObject();
         cJSON_AddNumberToObject(item, "id", i);
         cJSON_AddStringToObject(item, "ssid", (const char *)ap_info[i].ssid);
-        cJSON_AddNumberToObject(item, "strength", ap_info[i].rssi);
+        cJSON_AddNumberToObject(item, "rssi", ap_info[i].rssi);
         cJSON_AddItemToArray(wifi_list, item);
     }
     xSemaphoreGive(s_semph_get_ap_list);

@@ -20,6 +20,7 @@
 #include "lwip/apps/netbiosns.h"
 #include "protocol_examples_common.h"
 #include "wifi.h"
+#include "cJSON.h"
 #if CONFIG_EXAMPLE_WEB_DEPLOY_SD
 #include "driver/sdmmc_host.h"
 #endif
@@ -129,6 +130,14 @@ esp_err_t init_fs(void)
 //     ESP_LOGI(TAG, "Received string: %s", received_str);
 // }
 
+void scan_and_start_softAP(void)
+{
+    wifi_station_deinit();
+    wifi_scan();
+    wifi_station_deinit();
+    wifi_init_softap();
+}
+
 void app_main(void)
 {
     ESP_ERROR_CHECK(nvs_flash_init());
@@ -137,6 +146,7 @@ void app_main(void)
     initialise_mdns();
     netbiosns_init();
     netbiosns_set_name(CONFIG_EXAMPLE_MDNS_HOST_NAME);
+    ESP_ERROR_CHECK(init_fs());
 #ifndef PROD_MODE
     //ESP_ERROR_CHECK(wifi_init_sta(CONFIG_EXAMPLE_WIFI_SSID, CONFIG_EXAMPLE_WIFI_PASSWORD));
     wifi_scan();
@@ -154,19 +164,58 @@ void app_main(void)
     ESP_ERROR_CHECK(init_fs());
     ESP_ERROR_CHECK(start_rest_server(CONFIG_EXAMPLE_WEB_MOUNT_POINT));
 #else
-    if (wifi_init_sta("a","b") == ESP_OK)
+    //read name of wifi and password from credentials.txt and try to connect to wifi AP (router)
+    FILE *fd = NULL;
+    esp_err_t result = ESP_OK;
+    char file_buf[1024];
+    size_t chunksize = 0;
+    fd = fopen("/www/credentials.txt", "r");
+    if (!fd)
+    {
+        ESP_LOGE(TAG, "Failed to open credentials.txt");
+        result = ESP_FAIL;
+    }
+    else
+    {
+        chunksize = fread(file_buf, 1, 1024, fd);
+        if (chunksize == 0)
+        {
+            ESP_LOGE(TAG, "Failed to read credentials.txt");
+            result = ESP_FAIL;
+        }
+    }
+    ESP_ERROR_CHECK(result);
+    ESP_LOGI(TAG, "Read from SD (credentials.txt) %s, size %d", file_buf, chunksize);
+    cJSON *root = cJSON_Parse(file_buf);
+    cJSON *ssid_json = cJSON_GetObjectItemCaseSensitive(root, "ssid");
+    cJSON *pass_json = cJSON_GetObjectItemCaseSensitive(root, "password");
+    if (!cJSON_IsString(ssid_json) && (ssid_json->valuestring == NULL))
+    {
+        ESP_LOGE(TAG, "SD Card JSON isn't valid. ssid field error.");
+        result = ESP_FAIL;
+    }
+    else if (!cJSON_IsString(pass_json) && (pass_json->valuestring == NULL))
+    {
+        ESP_LOGE(TAG, "SD Card JSON isn't valid. password field error.");
+        result = ESP_FAIL;
+    }
+    ESP_ERROR_CHECK(result);
+    ssid = ssid_json->valuestring;
+    password = pass_json->valuestring;
+
+    if (wifi_init_sta(ssid, password) == ESP_OK)
     {
         ESP_LOGI(TAG, "Connected to WiFi in Station mode");
+        ESP_ERROR_CHECK(start_rest_server("/www/prod"));
     }
     else
     {
         ESP_LOGE(TAG, "Attempt to connect WiFi in Station mode FAILED, setup SoftAP mode");
-        wifi_station_deinit();
-        wifi_scan();
-        wifi_station_deinit();
-        wifi_init_softap();
+        scan_and_start_softAP();
+        ESP_ERROR_CHECK(start_rest_server("/www/softap"));
     }
-    ESP_ERROR_CHECK(init_fs());
-    ESP_ERROR_CHECK(start_rest_server(CONFIG_EXAMPLE_WEB_MOUNT_POINT));
+    cJSON_Delete(root);
+
+    
 #endif
 }
