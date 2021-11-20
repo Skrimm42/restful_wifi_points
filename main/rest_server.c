@@ -29,11 +29,12 @@ static const char *REST_TAG = "esp-rest";
     } while (0)
 
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + 128)
-#define SCRATCH_BUFSIZE (10240)
+#define SCRATCH_credentials_strSIZE (10240)
 
-typedef struct rest_server_context {
+typedef struct rest_server_context
+{
     char base_path[ESP_VFS_PATH_MAX + 1];
-    char scratch[SCRATCH_BUFSIZE];
+    char scratch[SCRATCH_credentials_strSIZE];
 } rest_server_context_t;
 
 #define CHECK_FILE_EXTENSION(filename, ext) (strcasecmp(&filename[strlen(filename) - strlen(ext)], ext) == 0)
@@ -42,17 +43,28 @@ typedef struct rest_server_context {
 static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filepath)
 {
     const char *type = "text/plain";
-    if (CHECK_FILE_EXTENSION(filepath, ".html")) {
+    if (CHECK_FILE_EXTENSION(filepath, ".html"))
+    {
         type = "text/html";
-    } else if (CHECK_FILE_EXTENSION(filepath, ".js")) {
+    }
+    else if (CHECK_FILE_EXTENSION(filepath, ".js"))
+    {
         type = "application/javascript";
-    } else if (CHECK_FILE_EXTENSION(filepath, ".css")) {
+    }
+    else if (CHECK_FILE_EXTENSION(filepath, ".css"))
+    {
         type = "text/css";
-    } else if (CHECK_FILE_EXTENSION(filepath, ".png")) {
+    }
+    else if (CHECK_FILE_EXTENSION(filepath, ".png"))
+    {
         type = "image/png";
-    } else if (CHECK_FILE_EXTENSION(filepath, ".ico")) {
+    }
+    else if (CHECK_FILE_EXTENSION(filepath, ".ico"))
+    {
         type = "image/x-icon";
-    } else if (CHECK_FILE_EXTENSION(filepath, ".svg")) {
+    }
+    else if (CHECK_FILE_EXTENSION(filepath, ".svg"))
+    {
         type = "text/xml";
     }
     return httpd_resp_set_type(req, type);
@@ -65,13 +77,17 @@ static esp_err_t rest_common_get_handler(httpd_req_t *req)
 
     rest_server_context_t *rest_context = (rest_server_context_t *)req->user_ctx;
     strlcpy(filepath, rest_context->base_path, sizeof(filepath));
-    if (req->uri[strlen(req->uri) - 1] == '/') {
+    if (req->uri[strlen(req->uri) - 1] == '/')
+    {
         strlcat(filepath, "/index.html", sizeof(filepath));
-    } else {
+    }
+    else
+    {
         strlcat(filepath, req->uri, sizeof(filepath));
     }
     int fd = open(filepath, O_RDONLY, 0);
-    if (fd == -1) {
+    if (fd == -1)
+    {
         ESP_LOGE(REST_TAG, "Failed to open file : %s", filepath);
         /* Respond with 500 Internal Server Error */
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read existing file");
@@ -82,14 +98,19 @@ static esp_err_t rest_common_get_handler(httpd_req_t *req)
 
     char *chunk = rest_context->scratch;
     ssize_t read_bytes;
-    do {
-        /* Read file in chunks into the scratch buffer */
-        read_bytes = read(fd, chunk, SCRATCH_BUFSIZE);
-        if (read_bytes == -1) {
+    do
+    {
+        /* Read file in chunks into the scratch credentials_strfer */
+        read_bytes = read(fd, chunk, SCRATCH_credentials_strSIZE);
+        if (read_bytes == -1)
+        {
             ESP_LOGE(REST_TAG, "Failed to read file : %s", filepath);
-        } else if (read_bytes > 0) {
-            /* Send the buffer contents as HTTP response chunk */
-            if (httpd_resp_send_chunk(req, chunk, read_bytes) != ESP_OK) {
+        }
+        else if (read_bytes > 0)
+        {
+            /* Send the credentials_strfer contents as HTTP response chunk */
+            if (httpd_resp_send_chunk(req, chunk, read_bytes) != ESP_OK)
+            {
                 close(fd);
                 ESP_LOGE(REST_TAG, "File sending failed!");
                 /* Abort sending file */
@@ -109,34 +130,74 @@ static esp_err_t rest_common_get_handler(httpd_req_t *req)
 }
 
 /* Simple handler for light brightness control */
-static esp_err_t light_brightness_post_handler(httpd_req_t *req)
+static esp_err_t pass_update_post_handler(httpd_req_t *req)
 {
     int total_len = req->content_len;
     int cur_len = 0;
-    char *buf = ((rest_server_context_t *)(req->user_ctx))->scratch;
+    char *credentials_string = ((rest_server_context_t *)(req->user_ctx))->scratch;
     int received = 0;
-    if (total_len >= SCRATCH_BUFSIZE) {
+    if (total_len >= SCRATCH_credentials_strSIZE)
+    {
         /* Respond with 500 Internal Server Error */
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "content too long");
         return ESP_FAIL;
     }
-    while (cur_len < total_len) {
-        received = httpd_req_recv(req, buf + cur_len, total_len);
-        if (received <= 0) {
+    while (cur_len < total_len)
+    {
+        received = httpd_req_recv(req, credentials_string + cur_len, total_len);
+        if (received <= 0)
+        {
             /* Respond with 500 Internal Server Error */
             httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to post control value");
             return ESP_FAIL;
         }
         cur_len += received;
     }
-    buf[total_len] = '\0';
+    credentials_string[total_len] = '\0';
 
-    cJSON *root = cJSON_Parse(buf);
-    int red = cJSON_GetObjectItem(root, "red")->valueint;
-    int green = cJSON_GetObjectItem(root, "green")->valueint;
-    int blue = cJSON_GetObjectItem(root, "blue")->valueint;
-    ESP_LOGI(REST_TAG, "Light control: red = %d, green = %d, blue = %d", red, green, blue);
+    cJSON *root = cJSON_Parse(credentials_string);
+    ESP_LOGI(REST_TAG, "received json  %s", credentials_string);
+    // id = cJSON_GetObjectItem(root, "id")->valueint;
+    // password = cJSON_GetObjectItem(root, "password")->valuestring;
+
+    // ESP_LOGI(REST_TAG, "SSID selected: %s \nPassword %s", ap_info[id].ssid, password);
+    // cJSON_Delete(root);
+    cJSON *id_json = cJSON_GetObjectItemCaseSensitive(root, "id");
+    if (!cJSON_IsNumber(id_json))
+    {
+        ESP_LOGE(REST_TAG, "Received JSON isn't valid. ID field error.");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to validate input JSON");
+        return ESP_FAIL;
+    }
+    id = id_json->valueint;
+
+    cJSON *pass_json = cJSON_GetObjectItemCaseSensitive(root, "password");
+    if (!cJSON_IsString(pass_json) && (pass_json->valuestring == NULL)){
+        ESP_LOGE(REST_TAG, "Received JSON isn't valid. PASSWORD field error.");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to validate input JSON");
+        return ESP_FAIL;
+    }
+    password = pass_json->valuestring;
+    
+    //write to file
+    cJSON *credentials = cJSON_CreateObject();
+    cJSON_AddStringToObject(credentials, "ssid", (const char *)ap_info[id].ssid);
+    cJSON_AddStringToObject(credentials, "password", password);
+    const char *credentials_str = cJSON_Print(credentials);
+    FILE *fd = fopen("/www/credentials.txt", "w");
+    if (!fd)
+    {
+        ESP_LOGE(REST_TAG, "Failed to open file credentials.txt");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to validate input JSON");
+        return ESP_FAIL;
+    }
+    ESP_LOGI(REST_TAG, "Write json string to SD Card %s, size %d", credentials_str, strlen(credentials_str));
+    fwrite(credentials_str, strlen(credentials_str), 1, fd);
+    fclose(fd);
+    free((void *)credentials_str);
+    cJSON_Delete(credentials);
     cJSON_Delete(root);
+
     httpd_resp_sendstr(req, "Post control value successfully");
     return ESP_OK;
 }
@@ -171,15 +232,16 @@ static esp_err_t temperature_data_get_handler(httpd_req_t *req)
 }
 
 //GET data
-static esp_err_t listWiFi_get_handler(httpd_req_t *req){
+static esp_err_t listWiFi_get_handler(httpd_req_t *req)
+{
     httpd_resp_set_type(req, "application/json");
     cJSON *root = cJSON_CreateObject();
 
-    cJSON *wifi_list=cJSON_AddArrayToObject(root, "aps");//access points list
+    cJSON *wifi_list = cJSON_AddArrayToObject(root, "aps"); //access points list
     //Add items to array
     //for(...)
     xSemaphoreTake(s_semph_get_ap_list, portMAX_DELAY);
-    for(uint8_t i = 0; i < ap_count; i++)
+    for (uint8_t i = 0; i < ap_count; i++)
     {
         ESP_LOGI(REST_TAG, "Enter cycle to make JSON array");
         cJSON *item = cJSON_CreateObject();
@@ -190,37 +252,12 @@ static esp_err_t listWiFi_get_handler(httpd_req_t *req){
     }
     xSemaphoreGive(s_semph_get_ap_list);
 
-    // cJSON *item = cJSON_CreateObject();
-    // cJSON_AddNumberToObject(item, "id", 1);
-    // cJSON_AddStringToObject(item, "ssid", "AHYC_TOPA");
-    // cJSON_AddNumberToObject(item, "strength", -95);
-    // cJSON_AddItemToArray(wifi_list, item);
-
-    // cJSON *item1 = cJSON_CreateObject();
-    // cJSON_AddNumberToObject(item1, "id", 2);
-    // cJSON_AddStringToObject(item1, "ssid", "Homespot");
-    // cJSON_AddNumberToObject(item1, "strength", -96);
-    // cJSON_AddItemToArray(wifi_list, item1);
-
-    // cJSON *item2 = cJSON_CreateObject();
-    // cJSON_AddNumberToObject(item2, "id", 3);
-    // cJSON_AddStringToObject(item2, "ssid", "TP_Link_98db9f");
-    // cJSON_AddNumberToObject(item2, "strength", -104);
-    // cJSON_AddItemToArray(wifi_list, item2);
-
-    // cJSON *item3 = cJSON_CreateObject();
-    // cJSON_AddNumberToObject(item3, "id", 4);
-    // cJSON_AddStringToObject(item3, "ssid", "DLink_ffd1289d34");
-    // cJSON_AddNumberToObject(item3, "strength", -106);
-    // cJSON_AddItemToArray(wifi_list, item3);
-
     const char *ap_list_info = cJSON_Print(root);
     httpd_resp_sendstr(req, ap_list_info);
     free((void *)ap_list_info);
     cJSON_Delete(root);
-    return ESP_OK; 
+    return ESP_OK;
 }
-
 
 esp_err_t start_rest_server(const char *base_path)
 {
@@ -236,33 +273,28 @@ esp_err_t start_rest_server(const char *base_path)
     ESP_LOGI(REST_TAG, "Starting HTTP Server");
     REST_CHECK(httpd_start(&server, &config) == ESP_OK, "Start server failed", err_start);
 
-   
-
     /* URI handler for fetching temperature data */
     httpd_uri_t wifi_list_get_uri = {
         .uri = "/aps",
         .method = HTTP_GET,
         .handler = listWiFi_get_handler,
-        .user_ctx = rest_context
-    };
+        .user_ctx = rest_context};
     httpd_register_uri_handler(server, &wifi_list_get_uri);
 
-    // /* URI handler for light brightness control */
-    // httpd_uri_t light_brightness_post_uri = {
-    //     .uri = "/api/v1/light/brightness",
-    //     .method = HTTP_POST,
-    //     .handler = light_brightness_post_handler,
-    //     .user_ctx = rest_context
-    // };
-    // httpd_register_uri_handler(server, &light_brightness_post_uri);
+    /* URI handler for light brightness control */
+    httpd_uri_t pass_update_post_uri = {
+        .uri = "/updpassword",
+        .method = HTTP_POST,
+        .handler = pass_update_post_handler,
+        .user_ctx = rest_context};
+    httpd_register_uri_handler(server, &pass_update_post_uri);
 
     /* URI handler for getting web server files */
     httpd_uri_t common_get_uri = {
         .uri = "/*",
         .method = HTTP_GET,
         .handler = rest_common_get_handler,
-        .user_ctx = rest_context
-    };
+        .user_ctx = rest_context};
     httpd_register_uri_handler(server, &common_get_uri);
 
     return ESP_OK;

@@ -48,6 +48,8 @@ static EventGroupHandle_t s_wifi_event_group;
 static const char *TAG = "wifi_c";
 
 static int s_retry_num = 0;
+uint16_t id;
+const char* password;
 esp_netif_t* netif_wifi;
 xSemaphoreHandle s_semph_get_ap_list;
 
