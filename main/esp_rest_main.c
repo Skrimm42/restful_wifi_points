@@ -6,6 +6,7 @@
    software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
    CONDITIONS OF ANY KIND, either express or implied.
 */
+
 #include "sdkconfig.h"
 #include "driver/gpio.h"
 #include "esp_vfs_semihost.h"
@@ -26,7 +27,6 @@
 #endif
 
 #define MDNS_INSTANCE "esp home web server"
-#define PROD_MODE 1
 static const char *TAG = "example";
 
 esp_err_t start_rest_server(const char *base_path);
@@ -123,13 +123,6 @@ esp_err_t init_fs(void)
 }
 #endif
 
-// void test_string(const char *str){
-//     uint8_t received_str[64];
-
-//     memcpy(received_str, str, strlen(str));
-//     ESP_LOGI(TAG, "Received string: %s", received_str);
-// }
-
 void scan_and_start_softAP(void)
 {
     wifi_station_deinit();
@@ -147,23 +140,7 @@ void app_main(void)
     netbiosns_init();
     netbiosns_set_name(CONFIG_EXAMPLE_MDNS_HOST_NAME);
     ESP_ERROR_CHECK(init_fs());
-#ifndef PROD_MODE
-    //ESP_ERROR_CHECK(wifi_init_sta(CONFIG_EXAMPLE_WIFI_SSID, CONFIG_EXAMPLE_WIFI_PASSWORD));
-    wifi_scan();
-    wifi_station_deinit();
-    if (wifi_init_sta(CONFIG_EXAMPLE_WIFI_SSID, CONFIG_EXAMPLE_WIFI_PASSWORD) == ESP_OK)
-    {
-        ESP_LOGI(TAG, "Connected to WiFi in Station mode");
-    }
-    else
-    {
-        ESP_LOGE(TAG, "Attempt to connect WiFi in Station mode FAILED, setup SoftAP mode");
 
-        //wifi_init_softap();
-    }
-    ESP_ERROR_CHECK(init_fs());
-    ESP_ERROR_CHECK(start_rest_server(CONFIG_EXAMPLE_WEB_MOUNT_POINT));
-#else
     //read name of wifi and password from credentials.txt and try to connect to wifi AP (router)
     FILE *fd = NULL;
     esp_err_t result = ESP_OK;
@@ -215,7 +192,4 @@ void app_main(void)
         ESP_ERROR_CHECK(start_rest_server("/www/softap"));
     }
     cJSON_Delete(root);
-
-    
-#endif
 }
