@@ -1,0 +1,31 @@
+{
+  "aps": {
+  "aps": [
+    {
+      "id": "1",
+      "ssid": "AHYC-TOPA",
+      "strength": -96
+    },
+    {
+      "id": "2",
+      "ssid": "HomeWiFi",
+      "strength": -104
+    },
+    {
+      "id": "3",
+      "ssid": "96P4711",
+      "strength": -106
+    },
+    {
+      "id": "4",
+      "ssid": "D-Link_9817febca3da12",
+      "strength": -110
+    },
+    {
+      "id": "5",
+      "ssid": "TP-Link092ffd",
+      "strength": -112
+    }
+  ]
+}
+}
